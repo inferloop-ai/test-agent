@@ -2,24 +2,153 @@ apiVersion: v1
 kind: Agent
 metadata:
   name: langgraph-table-agent
-  description: LangGraph agent for analyzing and visualizing table data using local Llama model via Ollama
+  version: 0.1.0
+  description: LangGraph agent for analyzing and visualizing CSV table data using local LLMs via Ollama
+  author: dmiruke
+  tags:
+    - data-analysis
+    - visualization
+    - langgraph
+    - ollama
+    - local-llm
 spec:
   runtime:
     image: langgraph-table-agent:0.1.0
+    dockerfile: Dockerfile
+    buildContext: .
     entrypoint: ["python", "main.py"]
+    workdir: /app
     env:
       - name: OLLAMA_BASE_URL
         default: http://host.docker.internal:11434
-        description: Ollama API endpoint URL
+        description: Ollama API endpoint URL for local LLM access
+        required: false
       - name: LLM_MODEL
-        default: llama3.2
-        description: Name of the Llama model to use
+        default: qwen2.5:7b
+        description: LLM model to use (must support tool calling)
+        required: false
+        options:
+          - qwen2.5:7b
+          - llama3.1:8b
+          - llama3.2
+          - mistral:7b-instruct
+          - mixtral:8x7b
       - name: OUTPUT_DIR
         default: /app/outputs
-        description: Directory for output files
+        description: Directory for generated output files (charts, reports)
+        required: false
+      - name: DATA_DIR
+        default: /app/data
+        description: Directory containing input CSV files
+        required: false
+    volumes:
+      - name: data
+        path: /app/data
+        description: Input data directory
+        hostPath: ./data
+      - name: outputs
+        path: /app/outputs
+        description: Output directory for generated files
+        hostPath: ./outputs
     ports:
-      - 8080
+      - port: 8080
+        protocol: TCP
+        description: Optional web interface (not currently implemented)
+    resources:
+      limits:
+        memory: 2Gi
+        cpu: 2
+      requests:
+        memory: 1Gi
+        cpu: 1
+    healthcheck:
+      command: ["python", "-c", "import requests; requests.get('${OLLAMA_BASE_URL}/api/tags')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  tools:
+    - name: profile_table
+      description: Analyze CSV file and return statistical profile
+      parameters:
+        - name: file
+          type: string
+          description: Path to CSV file
+          required: true
+    - name: plot_chart
+      description: Create visualization from CSV data
+      parameters:
+        - name: file
+          type: string
+          description: Path to CSV file
+          required: true
+        - name: x
+          type: string
+          description: Column name for X axis
+          required: true
+        - name: y
+          type: string
+          description: Column name for Y axis
+          required: true
+        - name: out
+          type: string
+          description: Output filename for chart
+          required: false
   commands:
-    test: ["python", "main.py", "test"]
-    chat: ["python", "main.py", "chat"]
-    run: ["python", "main.py", "run"]
+    test:
+      description: Test agent configuration and connectivity
+      cmd: ["python", "main.py", "test"]
+      env:
+        - name: TEST_MODE
+          value: "true"
+    chat:
+      description: Start interactive chat session with the agent
+      cmd: ["python", "main.py", "chat"]
+      interactive: true
+    run:
+      description: Execute a single analysis prompt
+      cmd: ["python", "main.py", "run"]
+      args:
+        - name: prompt
+          description: Analysis prompt to execute
+          required: true
+          example: "Analyze the sales data and create a chart"
+    container-test:
+      description: Run comprehensive tests in container mode
+      cmd: ["python", "docker_test_runner.py"]
+      env:
+        - name: OUTPUT_DIR
+          value: /app/outputs
+  dependencies:
+    python: "3.11"
+    packages:
+      - langchain==0.3.13
+      - langchain-ollama==0.2.4
+      - langgraph==0.2.57
+      - pandas==2.2.3
+      - matplotlib==3.10.0
+      - typer==0.15.1
+      - rich==13.9.4
+    ollama_models:
+      required:
+        - qwen2.5:7b
+      optional:
+        - llama3.1:8b
+        - llama3.2
+        - mistral:7b-instruct
+        - mixtral:8x7b
+  notes:
+    setup: |
+      1. Install Ollama locally: https://ollama.ai
+      2. Pull required model: ollama pull qwen2.5:7b
+      3. Build Docker image: docker build -t langgraph-table-agent:0.1.0 .
+      4. Run with volume mounts: docker run -v $(pwd)/data:/app/data -v $(pwd)/outputs:/app/outputs langgraph-table-agent:0.1.0
+    limitations:
+      - Requires local Ollama instance for LLM access
+      - Only tool-capable models can be used (see LLM_MODEL options)
+      - CSV files must be properly formatted with headers
+      - Output directory must be writable
+    troubleshooting:
+      - If "model not found", pull the model with ollama pull command
+      - If "connection refused", ensure Ollama is running locally
+      - For Docker, use host.docker.internal to access host's Ollama
+      - Check model supports tool calling if getting function call errors
