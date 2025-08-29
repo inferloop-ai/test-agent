@@ -1,0 +1,29 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies directly (faster for testing)
+RUN pip install --no-cache-dir \
+    langchain==0.3.27 \
+    langgraph==0.6.6 \
+    langsmith==0.4.20 \
+    langchain-community==0.3.29 \
+    langchain-ollama==0.3.7 \
+    pandas \
+    matplotlib \
+    typer \
+    requests
+
+# Copy application code
+COPY . .
+
+# Set environment variables for container
+ENV OUTPUT_DIR=/app/outputs
+ENV OLLAMA_BASE_URL=http://host.docker.internal:11434
+ENV LLM_MODEL=qwen2.5:7b
+
+# Create output directory
+RUN mkdir -p /app/outputs
+
+# Default command
+CMD ["python", "main.py", "test"]

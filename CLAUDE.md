@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a LangGraph-based AI agent for table data analysis, built with Python 3.11 and containerized with Docker. The agent uses local Llama models via Ollama to analyze CSV data and generate visualizations.
+This is a LangGraph-based AI agent for table data analysis, built with Python 3.11 and containerized with Docker. The agent uses local LLM models via Ollama (default: qwen2.5:7b) to analyze CSV data and generate visualizations.
 
 ## Common Development Commands
 
@@ -36,7 +36,7 @@ The application follows a tool-based AI agent pattern:
 1. **Entry Point** (`main.py`): Typer CLI that routes commands to the agent
 2. **Agent Core** (`agents/graph_agent.py`): LangGraph StateGraph implementation that:
    - Manages conversation state and tool execution
-   - Uses ChatOllama with local Llama models
+   - Uses ChatOllama with local LLM models (qwen, llama, mistral, etc.)
    - Implements conditional routing between LLM and tool execution
 3. **Tools** (`tools/data_tools.py`): Data processing capabilities:
    - `profile_table()`: Statistical analysis of CSV files
@@ -47,11 +47,12 @@ The agent processes CSV files from the `data/` directory and can perform statist
 
 ## Important Implementation Notes
 
-- **Local LLM Setup**: Requires Ollama running locally with a Llama model (default: llama3.2)
+- **Local LLM Setup**: Requires Ollama running locally with a tool-capable model (default: qwen2.5:7b)
 - **Environment Variables**: 
   - `OLLAMA_BASE_URL` (optional, defaults to `http://localhost:11434`)
-  - `LLM_MODEL` (optional, defaults to `llama3.2`)
+  - `LLM_MODEL` (optional, defaults to `qwen2.5:7b`)
   - `OUTPUT_DIR` (optional, defaults to `/app/outputs`)
+- **Tool-Capable Models**: qwen2.5:7b, llama3.1:8b, llama3.2, mistral:7b-instruct, mixtral:8x7b
 - **Data Flow**: CSV files → Pandas processing → Matplotlib visualizations → Output directory
 - **Model Configuration**: Uses ChatOllama with temperature 0 for consistent results
 - **Container Paths**: `/app/data/` for input files, `/app/outputs/` for generated content

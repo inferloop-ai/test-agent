@@ -112,7 +112,7 @@ def test():
     
     # Check Ollama connection
     base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-    model_name = os.getenv("LLM_MODEL", "llama3.2")
+    model_name = os.getenv("LLM_MODEL", "qwen2.5:7b")
     
     print(f"Configuration:")
     print(f"  Ollama URL: {base_url}")
@@ -133,6 +133,19 @@ def test():
                 print(f"  Available models: {', '.join(models) if models else 'none'}")
                 print(f"  To pull model: ollama pull {model_name}")
                 has_errors = True
+            
+            # Show tool-capable models that are available
+            from agents.graph_agent import TOOL_CAPABLE_MODELS
+            available_tool_models = [m for m in models if any(m.startswith(tc.split(':')[0]) for tc in TOOL_CAPABLE_MODELS)]
+            if available_tool_models:
+                print(f"\n  Tool-capable models available:")
+                for m in available_tool_models:
+                    print(f"    - {m}")
+            else:
+                print(f"\n  No tool-capable models found. Recommended:")
+                print(f"    - qwen2.5:7b (default)")
+                print(f"    - llama3.1:8b")
+                print(f"    - llama3.2")
         else:
             print("⚠ Ollama is not responding correctly")
             has_errors = True
