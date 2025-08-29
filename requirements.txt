@@ -1,7 +1,9 @@
 langchain
 langgraph
 langsmith
-langchain-openai
+langchain-community
+langchain-ollama
 pandas
 matplotlib
 typer
+requests

@@ -10,7 +10,8 @@ COPY . .
 
 # Set up directories
 ENV OUTPUT_DIR=/app/outputs
-ENV OPENAI_API_KEY=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
+ENV OLLAMA_BASE_URL=http://host.docker.internal:11434
+ENV LLM_MODEL=llama3.2
 RUN mkdir -p /app/outputs /app/data
 
 # Simple health check that doesn't require API key

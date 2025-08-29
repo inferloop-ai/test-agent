@@ -9,11 +9,25 @@ app = typer.Typer()
 @app.command()
 def run(prompt: str = "Analyze the sample data"):
     """Run the agent with a given prompt."""
-    # Check for required environment variables
-    if not os.getenv("OPENAI_API_KEY"):
-        print("ERROR: OPENAI_API_KEY environment variable is not set!")
-        print("Please set it when deploying the agent or add it to your environment.")
-        print("\nExample: export OPENAI_API_KEY='your-api-key-here'")
+    # Check for Ollama connection
+    base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    model_name = os.getenv("LLM_MODEL", "llama3.2")
+    
+    # Test Ollama connection
+    import requests
+    try:
+        response = requests.get(f"{base_url}/api/tags", timeout=5)
+        if response.status_code != 200:
+            print(f"ERROR: Cannot connect to Ollama at {base_url}")
+            print("Please ensure Ollama is running locally.")
+            print("\nTo start Ollama: ollama serve")
+            print(f"To pull the model: ollama pull {model_name}")
+            sys.exit(1)
+    except requests.exceptions.RequestException:
+        print(f"ERROR: Cannot connect to Ollama at {base_url}")
+        print("Please ensure Ollama is running locally.")
+        print("\nTo start Ollama: ollama serve")
+        print(f"To pull the model: ollama pull {model_name}")
         sys.exit(1)
     
     try:
@@ -34,8 +48,18 @@ def run(prompt: str = "Analyze the sample data"):
 @app.command()
 def chat():
     """Interactive chat mode with the agent."""
-    if not os.getenv("OPENAI_API_KEY"):
-        print("ERROR: OPENAI_API_KEY environment variable is not set!")
+    # Check for Ollama connection
+    base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    model_name = os.getenv("LLM_MODEL", "llama3.2")
+    
+    import requests
+    try:
+        response = requests.get(f"{base_url}/api/tags", timeout=5)
+        if response.status_code != 200:
+            print(f"ERROR: Cannot connect to Ollama at {base_url}")
+            sys.exit(1)
+    except requests.exceptions.RequestException:
+        print(f"ERROR: Cannot connect to Ollama at {base_url}")
         sys.exit(1)
     
     try:
@@ -86,13 +110,35 @@ def test():
     
     has_errors = False
     
-    # Check OpenAI API Key
-    if os.getenv("OPENAI_API_KEY"):
-        print("✓ OPENAI_API_KEY is set")
-    else:
-        print("⚠ OPENAI_API_KEY is not set")
-        print("  To set: export OPENAI_API_KEY='your-key-here'")
-        print("  Or provide it when deploying the agent")
+    # Check Ollama connection
+    base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    model_name = os.getenv("LLM_MODEL", "llama3.2")
+    
+    print(f"Configuration:")
+    print(f"  Ollama URL: {base_url}")
+    print(f"  Model: {model_name}")
+    
+    import requests
+    try:
+        response = requests.get(f"{base_url}/api/tags", timeout=5)
+        if response.status_code == 200:
+            print("✓ Ollama is running and accessible")
+            # Check if model is available
+            data = response.json()
+            models = [m['name'] for m in data.get('models', [])]
+            if any(model_name in m for m in models):
+                print(f"✓ Model {model_name} is available")
+            else:
+                print(f"⚠ Model {model_name} not found")
+                print(f"  Available models: {', '.join(models) if models else 'none'}")
+                print(f"  To pull model: ollama pull {model_name}")
+                has_errors = True
+        else:
+            print("⚠ Ollama is not responding correctly")
+            has_errors = True
+    except requests.exceptions.RequestException as e:
+        print(f"⚠ Cannot connect to Ollama at {base_url}")
+        print("  Make sure Ollama is running: ollama serve")
         has_errors = True
     
     # Check imports
@@ -121,7 +167,7 @@ def test():
     print("\n" + "=" * 50)
     if has_errors:
         print("⚠ Configuration incomplete - see warnings above")
-        print("The agent container is running but needs API key to function")
+        print("The agent needs Ollama running locally to function")
     else:
         print("✅ Agent is fully configured and ready to run!")
     print("=" * 50)

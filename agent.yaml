@@ -2,15 +2,18 @@ apiVersion: v1
 kind: Agent
 metadata:
   name: langgraph-table-agent
-  description: LangGraph agent for analyzing and visualizing table data using OpenAI GPT-4
+  description: LangGraph agent for analyzing and visualizing table data using local Llama model via Ollama
 spec:
   runtime:
     image: langgraph-table-agent:0.1.0
     entrypoint: ["python", "main.py"]
     env:
-      - name: OPENAI_API_KEY
-        required: true
-        description: OpenAI API key for GPT-4 access
+      - name: OLLAMA_BASE_URL
+        default: http://host.docker.internal:11434
+        description: Ollama API endpoint URL
+      - name: LLM_MODEL
+        default: llama3.2
+        description: Name of the Llama model to use
       - name: OUTPUT_DIR
         default: /app/outputs
         description: Directory for output files
