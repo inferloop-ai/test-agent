@@ -11,7 +11,7 @@ COPY . .
 # Set up directories
 ENV OUTPUT_DIR=/app/outputs
 ENV OLLAMA_BASE_URL=http://host.docker.internal:11434
-ENV LLM_MODEL=llama3.2
+ENV LLM_MODEL=qwen2.5:7b
 RUN mkdir -p /app/outputs /app/data
 
 # Simple health check that doesn't require API key
@@ -21,5 +21,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 # Default entrypoint
 ENTRYPOINT ["python", "main.py"]
 
-# Default command - keep container running for interactive use
-CMD ["sleep"]
+# Default command - run test to verify connectivity
+CMD ["test"]
