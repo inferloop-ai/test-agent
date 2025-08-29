@@ -1,0 +1,61 @@
+# Version control
+.git/
+.gitignore
+
+# Python cache and virtual environments
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+venv/
+env/
+ENV/
+.venv
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Test and development files
+*.test.py
+test_*.py
+generate_*.py
+docker_test_runner.py
+run_*.sh
+
+# Output directories (will be mounted as volumes)
+outputs/
+container_outputs/
+*.png
+*.jpg
+*.jpeg
+
+# Documentation (not needed for runtime)
+*.md
+!requirements.txt
+
+# Temporary and backup files
+*.tmp
+*.bak
+*.log
+*.cache
+.coverage
+.pytest_cache/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Archive files (avoid recursion when building)
+*.zip
+*.tar
+*.tar.gz
+*.tgz
