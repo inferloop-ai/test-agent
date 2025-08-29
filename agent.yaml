@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Agent
+metadata:
+  name: langgraph-table-agent
+  description: LangGraph agent for analyzing and visualizing table data using OpenAI GPT-4
+spec:
+  runtime:
+    image: langgraph-table-agent:0.1.0
+    entrypoint: ["python", "main.py"]
+    env:
+      - name: OPENAI_API_KEY
+        required: true
+        description: OpenAI API key for GPT-4 access
+      - name: OUTPUT_DIR
+        default: /app/outputs
+        description: Directory for output files
+    ports:
+      - 8080
+  commands:
+    test: ["python", "main.py", "test"]
+    chat: ["python", "main.py", "chat"]
+    run: ["python", "main.py", "run"]

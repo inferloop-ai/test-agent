@@ -1,0 +1,7 @@
+langchain
+langgraph
+langsmith
+langchain-openai
+pandas
+matplotlib
+typer
