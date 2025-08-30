@@ -3,7 +3,11 @@ langgraph
 langsmith
 langchain-community
 langchain-ollama
+langchain-openai
+langchain-anthropic
 pandas
 matplotlib
 typer
 requests
+psutil
+rich

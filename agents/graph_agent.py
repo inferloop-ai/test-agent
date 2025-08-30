@@ -1,56 +1,67 @@
-from langchain_ollama import ChatOllama
-from langchain_community.llms import Ollama
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_core.messages import HumanMessage
 from tools.data_tools import profile_table, plot_chart
+from agents.llm_detector import get_llm_config, detect_system_capacity, detect_available_llms
+from agents.llm_factory import get_llm_instance
 import os
 
-# Models that support tool calling
-TOOL_CAPABLE_MODELS = [
-    "llama3.1:8b", "llama3.1:70b", "llama3.1",
-    "llama3.2", "llama3.2:1b", "llama3.2:3b",
-    "qwen2.5:7b", "qwen2.5:14b", "qwen2.5:32b", "qwen2.5:72b",
-    "mistral:7b-instruct", "mixtral:8x7b",
-    "command-r:35b", "command-r-plus:104b",
-    "firefunction-v2",
-    "nous-hermes2:10.7b", "nous-hermes2-mixtral:8x7b"
-]
-
 def build_graph():
-    # Get configuration from environment variables
-    base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-    model_name = os.getenv("LLM_MODEL", "qwen2.5:7b")  # Default to qwen2.5:7b
+    """Build the LangGraph agent with auto-detected or configured LLM"""
     
-    # Check if model supports tools
-    supports_tools = any(model_name.startswith(m.split(":")[0]) for m in TOOL_CAPABLE_MODELS)
+    # Get LLM configuration
+    try:
+        config = get_llm_config()
+        provider = config["provider"]
+        model_name = config["model"]
+        supports_tools = config["supports_tools"]
+        
+        # Display configuration info
+        print("=" * 50)
+        print("LLM Configuration:")
+        print(f"  Provider: {provider}")
+        print(f"  Model: {model_name}")
+        print(f"  Tool Support: {'Yes' if supports_tools else 'No'}")
+        
+        system_cap = config["system_capacity"]
+        print(f"\nSystem Capacity:")
+        print(f"  CPU Cores: {system_cap['cpu_cores']}")
+        print(f"  Memory: {system_cap['memory_gb']:.1f} GB")
+        if system_cap['gpu_available']:
+            print(f"  GPU: Yes ({system_cap.get('gpu_type', 'NVIDIA')})")
+            if 'gpu_memory_gb' in system_cap:
+                print(f"  GPU Memory: {system_cap['gpu_memory_gb']:.1f} GB")
+        print("=" * 50)
+        
+    except Exception as e:
+        print(f"Error detecting LLM configuration: {e}")
+        # Fall back to manual configuration
+        provider = os.getenv("LLM_PROVIDER", "ollama")
+        model_name = os.getenv("LLM_MODEL", "qwen2.5:7b")
+        supports_tools = True
     
-    if not supports_tools:
-        print(f"Warning: Model {model_name} may not support tool calling.")
-        print(f"Recommended models: {', '.join(TOOL_CAPABLE_MODELS[:5])}...")
-    
-    # Initialize Ollama with the selected model
-    model = ChatOllama(
-        base_url=base_url,
-        model=model_name,
-        temperature=0
-    )
+    # Get the LLM instance
+    model = get_llm_instance(provider, model_name)
     
     # Bind tools to the model
     tools = [profile_table, plot_chart]
     
-    try:
-        model_with_tools = model.bind_tools(tools)
-    except Exception as e:
-        print(f"Warning: Could not bind tools to {model_name}: {e}")
-        print("The model will run without tool support.")
+    if not supports_tools:
+        print(f"Warning: Model {model_name} may not support tool calling.")
         model_with_tools = model
+    else:
+        try:
+            model_with_tools = model.bind_tools(tools)
+        except Exception as e:
+            print(f"Warning: Could not bind tools to {model_name}: {e}")
+            print("The model will run without tool support.")
+            model_with_tools = model
     
+    # Build the graph
     tool_node = ToolNode(tools)
     graph = StateGraph(dict)
     
-    # Update to use model with bound tools
-    graph.add_node("llm", lambda s: {"messages":[model_with_tools.invoke(s["messages"])]})
+    graph.add_node("llm", lambda s: {"messages": [model_with_tools.invoke(s["messages"])]})
     graph.add_node("tools", tool_node)
     graph.add_edge(START, "llm")
     graph.add_conditional_edges("llm", tools_condition, {"tools": "tools", END: END})

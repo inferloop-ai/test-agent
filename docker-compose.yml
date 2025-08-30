@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  # Ollama service for local LLM
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama-server
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - agent-network
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 4G
+
+  # Model puller - pulls required models on startup
+  model-puller:
+    image: ollama/ollama:latest
+    container_name: model-puller
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - OLLAMA_HOST=ollama:11434
+    volumes:
+      - ./scripts/pull_models.sh:/pull_models.sh
+    entrypoint: /bin/sh /pull_models.sh
+    networks:
+      - agent-network
+
+  # LangGraph Agent
+  agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: langgraph-agent
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      # LLM Configuration
+      - LLM_PROVIDER=${LLM_PROVIDER:-ollama}
+      - LLM_MODEL=${LLM_MODEL:-qwen2.5:7b}
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_CONTAINER_URL=http://ollama:11434
+      - IN_DOCKER=true
+      
+      # External API keys (optional)
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY:-}
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
+      
+      # Prefer local models over APIs
+      - PREFER_LOCAL_LLM=${PREFER_LOCAL_LLM:-true}
+      
+      # Output configuration
+      - OUTPUT_DIR=/app/outputs
+    volumes:
+      - ./data:/app/data
+      - ./outputs:/app/outputs
+    networks:
+      - agent-network
+    command: ["test"]
+
+  # Optional: Web UI for Ollama
+  ollama-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: ollama-webui
+    ports:
+      - "3000:8080"
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+    volumes:
+      - webui_data:/app/backend/data
+    networks:
+      - agent-network
+    profiles:
+      - webui
+
+networks:
+  agent-network:
+    driver: bridge
+
+volumes:
+  ollama_data:
+  webui_data:
