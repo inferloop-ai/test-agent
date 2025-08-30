@@ -18,8 +18,5 @@ RUN mkdir -p /app/outputs /app/data
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD python -c "print('Health check passed')" || exit 1
 
-# Default entrypoint
-ENTRYPOINT ["python", "main.py"]
-
-# Default command - run test to verify connectivity
-CMD ["test"]
+# Default command - run web interface
+CMD ["python", "web_app.py"]

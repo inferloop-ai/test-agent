@@ -11,3 +11,6 @@ typer
 requests
 psutil
 rich
+fastapi
+uvicorn[standard]
+websockets

@@ -1,0 +1,25 @@
+Agent Package Manifest
+Package: langgraph-agent-20250830_031408.zip
+Created: 2025-08-30T03:14:08.865442
+Size: 0.02 MB
+Files: 17
+
+Included files:
+----------------------------------------
+.env.example
+Dockerfile
+README_LLM.md
+agent.yaml
+agents/graph_agent.py
+agents/llm_detector.py
+agents/llm_factory.py
+data/business_sales.csv
+data/business_sales_detailed.csv
+data/example_sales.csv
+data/regular_sales.csv
+data/regular_sales_detailed.csv
+docker-compose.yml
+main.py
+requirements.txt
+scripts/pull_models.sh
+tools/data_tools.py

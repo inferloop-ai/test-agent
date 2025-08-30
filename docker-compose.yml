@@ -73,7 +73,9 @@ services:
       - ./outputs:/app/outputs
     networks:
       - agent-network
-    command: ["test"]
+    ports:
+      - "8000:8000"  # Web UI port
+    command: ["python", "web_app.py"]  # Run web interface by default
 
   # Optional: Web UI for Ollama
   ollama-webui:

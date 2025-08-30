@@ -21,13 +21,21 @@ def build_agent_package():
     include_patterns = [
         # Core application files
         "main.py",
+        "web_app.py",
         "agents/",
         "tools/",
+        "scripts/",
         
         # Configuration files
         "requirements.txt",
         "agent.yaml",
         "Dockerfile",
+        "docker-compose.yml",
+        ".env.example",
+        
+        # Documentation
+        "README_LLM.md",
+        "README_WEBUI.md",
         
         # Data directory structure (empty)
         "data/",
@@ -48,13 +56,15 @@ def build_agent_package():
         "test_*.py",
         "generate_*.py",
         "docker_test_runner.py",
-        "*.sh",
-        "*.md",
+        "run_*.sh",
+        "test_docker_ollama.sh",
         "*.log",
         "*.zip",
         ".dockerignore",
         ".gitignore",
         "build_agent_package.py",  # Don't include this script
+        "README.md",  # Exclude old README
+        "CLAUDE.md",  # Exclude CLAUDE.md
     ]
     
     def should_include(path):
@@ -132,17 +142,20 @@ def build_agent_package():
     print("\n" + "=" * 50)
     print("Deployment Instructions:")
     print("-" * 50)
-    print("1. Upload the zip file to your deployment environment")
-    print("2. Extract: unzip " + package_name)
-    print("3. Install dependencies: pip install -r requirements.txt")
-    print("4. Set environment variables:")
-    print("   export OLLAMA_BASE_URL=http://localhost:11434")
-    print("   export LLM_MODEL=qwen2.5:7b")
-    print("5. Run: python main.py test")
-    print("\nFor Docker deployment:")
+    print("\nOption 1: Docker Compose (Recommended)")
+    print("1. Extract: unzip " + package_name)
+    print("2. Configure: cp .env.example .env && edit .env")
+    print("3. Deploy: docker-compose up -d")
+    print("4. Test: docker-compose exec agent python main.py test")
+    print("\nOption 2: Standalone Docker")
     print("1. Extract the zip file")
     print("2. Build: docker build -t langgraph-agent .")
     print("3. Run: docker run --rm langgraph-agent")
+    print("\nOption 3: Local Python")
+    print("1. Extract the zip file")
+    print("2. Install: pip install -r requirements.txt")
+    print("3. Configure: cp .env.example .env && edit .env")
+    print("4. Run: python main.py test")
     
     return package_name, manifest_name
 
